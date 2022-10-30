@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Geonotes</string>
+    <string name="lokalisierung_gestartet">Lokalisierung gestartet</string>
+    <string name="lokalisierung_starten">Lokalisierung starten</string>
+    <string name="standort_anzeigen">Standort anzeigen</string>
+    <string name="geodaten_empfangen">Geodaten empfangen</string>
+    <string name="verfuegbare_provider">Verfügbare Provider</string>
+    <string name="aktuelles_projekt_prefix">Aktuelles Projekt:\u0020</string>
+    <string name="thema">Thema</string>
+    <string name="notiz">Notiz</string>
+    <string name="notiz_speichern">Notiz Speichern</string>
+    <string name="action_projekt_bearbeiten">Projekt bearbeiten</string>
+    <string name="action_projekt_auswaehlen">Projekt auswählen</string>
+    <string name="title_item_foot">Zu Fuß (9 sec/10 m)</string>
+    <string name="title_item_bicycle">Rad (4 sec/25 m)</string>
+    <string name="title_item_car">PKW (4 sec/50 m)</string>
+    <string name="title_item_fast">PKW fern (4 sec/100 m)</string>
+    <string name="title_item_stop">Stop (60 sec/1 m)</string>
+</resources>

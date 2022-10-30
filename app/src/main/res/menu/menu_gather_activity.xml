@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+            android:id="@+id/menu_projekt_bearbeiten"
+            android:title="@string/action_projekt_bearbeiten"
+            android:icon="@android:drawable/ic_menu_edit"
+            app:showAsAction="ifRoom" />
+    <item
+            android:id="@+id/menu_projekt_auswaehlen"
+            android:title="@string/action_projekt_auswaehlen"
+            android:icon="@android:drawable/ic_menu_set_as"
+            app:showAsAction="ifRoom" />
+
+    <group android:checkableBehavior="single">
+        <item
+                android:title="@string/title_item_foot"
+                android:id="@+id/item_foot" />
+        <item
+                android:title="@string/title_item_bicycle"
+                android:id="@+id/item_bicycle" />
+        <item
+                android:title="@string/title_item_car"
+                android:id="@+id/item_car" />
+        <item
+                android:title="@string/title_item_fast"
+                android:id="@+id/item_fast" />
+        <item
+                android:title="@string/title_item_stop"
+                android:id="@+id/item_stop" />
+
+    </group>
+</menu>
