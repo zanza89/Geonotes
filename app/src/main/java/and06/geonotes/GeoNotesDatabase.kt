@@ -16,6 +16,7 @@ data class Location(
 
 @Entity(
     tableName = "notizen",
+    indices = arrayOf(Index(value = ["projektId"]), Index(value = ["latitude", "longitude"])),
     foreignKeys = [ForeignKey(
         entity = Projekt::class,
         parentColumns = ["id"],
@@ -57,6 +58,8 @@ abstract class GeoNotesDatabase : RoomDatabase() {
     fun insertProjekt(projekt: Projekt): Long
     @Query("SELECT * FROM Projekte")
     fun getProjekte(): List<Projekt>
+    @Update
+    fun updateProjekt(projekt: Projekt)
 }
 
 @Dao interface LocationsDao {

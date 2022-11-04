@@ -15,12 +15,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.DialogInterface
 import android.content.pm.PackageManager
+import android.provider.Settings.Global
 import java.text.DateFormat
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.util.Date
 
 class GatherActivity : AppCompatActivity() {
@@ -143,12 +143,50 @@ class GatherActivity : AppCompatActivity() {
 
     private fun openProjektAuswaehlenDialog() {
         Log.d(javaClass.simpleName, "\"Projekt auswählen\" ausgewählt")
+        val database = GeoNotesDatabase.getInstance(this)
+        CoroutineScope(Dispatchers.Main).launch() {
+            var projekte : List<Projekt>? = null
+            withContext(Dispatchers.IO) {
+                projekte = database.projekteDao().getProjekte()
+            }
+            with(AlertDialog.Builder(this@GatherActivity)) {
+                setTitle("Projekte auswählen")
+                // TODO: OnClickListener implementieren
+                show()
+            }
+        }
     }
 
     private fun openProjektBearbeitenDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_projekt_bearbeiten, null)
         Log.d(javaClass.simpleName, "\"Projekt bearbeiten\" ausgewählt")
-        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_projekt_bearbeiten, null)
+        val textView = dialogView.findViewById<TextView>(R.id.textview_dialog_projektname_bearbeiten)
+        val dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT)
+        textView.text = dateFormat.format(Date(aktuellesProjekt.id))
+        val editText = dialogView.findViewById<TextView>(R.id.edittext_dialog_projektname_bearbeiten)
+        editText.text = aktuellesProjekt.beschreibung
+        val database = GeoNotesDatabase.getInstance(this)
+        with(AlertDialog.Builder(this)) {
+            setView(dialogView)
+            setTitle("projektbeschreibung eingeben/ändern")
+            setPositiveButton("Übernehmen", DialogInterface.OnClickListener {dialog, id ->
+                // Projektbeschreibung ändern
+                aktuellesProjekt.beschreibung = editText.text.toString().trim()
+                findViewById<TextView>(R.id.textview_aktuelles_projekt).text = getString(R.string.aktuelles_projekt_prefix) + "${aktuellesProjekt.beschreibung} (" +
+                        dateFormat.format(Date(aktuellesProjekt.id)) + ")"
+                // Projekt-Update in datenbank
+                GlobalScope.launch {
+                    database.projekteDao().updateProjekt(aktuellesProjekt)
+                    Log.d(javaClass.simpleName, "Update Projekt: $aktuellesProjekt")
+                    val projekte = database.projekteDao().getProjekte()
+                    projekte.forEach {
+                        Log.d(javaClass.simpleName, "Projekt $it")
+                    }
+                }
+            })
+            setNegativeButton("Abbrechen", DialogInterface.OnClickListener { dialog, id ->  })
+            show()
+        }
     }
 
 
