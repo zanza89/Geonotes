@@ -1,27 +1,26 @@
 package and06.geonotes
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.DialogInterface
-import android.content.pm.PackageManager
-import android.provider.Settings.Global
-import java.text.DateFormat
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import kotlinx.coroutines.*
-import java.util.Date
+import java.text.DateFormat
+import java.util.*
 
 class GatherActivity : AppCompatActivity() {
 
@@ -33,7 +32,7 @@ class GatherActivity : AppCompatActivity() {
 
     var minTime = 4000L // in Millisekunden
     var minDistance = 25.0f // in Metern
-    var aktuellesProjekt = Projekt(Date().time, "")
+    var aktuellesProjekt = Projekt(Date().getTime(), "")
     var aktuelleNotiz: Notiz? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,13 +45,11 @@ class GatherActivity : AppCompatActivity() {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ), 0
         )
-        val dateFormat = DateFormat.getDateTimeInstance(
-            DateFormat.LONG, DateFormat.SHORT, java.util.Locale.GERMAN
-        )
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        val textview = findViewById<TextView>(R.id.textview_aktuelles_projekt)
-        textview.append(dateFormat.format(java.util.Date(aktuellesProjekt.id)))
+
+        val textView = findViewById<TextView>(R.id.textview_aktuelles_projekt)
+        textView.append(aktuellesProjekt.getDescription())
 
     }
 
@@ -149,9 +146,22 @@ class GatherActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 projekte = database.projekteDao().getProjekte()
             }
+            if (projekte.isNullOrEmpty()) {
+                Toast.makeText(this@GatherActivity, "Noch keine Projekte vorhanden", Toast.LENGTH_LONG).show()
+            }
+            val items = ArrayList<CharSequence>()
+            projekte?.forEach {
+                items.add(it.getDescription())
+            }
             with(AlertDialog.Builder(this@GatherActivity)) {
                 setTitle("Projekte auswählen")
-                // TODO: OnClickListener implementieren
+                setItems(items.toArray(emptyArray()), DialogInterface.OnClickListener { dialog, id ->
+                    // aktuelles Projekt auf ausgewähltes Projekt setzen:
+                    aktuellesProjekt = projekte?.get(id)!!
+                    val textView = findViewById<TextView>(R.id.textview_aktuelles_projekt)
+                    textView.text = getString(R.string.aktuelles_projekt_prefix) + aktuellesProjekt.getDescription()
+                    // TODO: Notiz zum Projekt anzeigen
+                })
                 show()
             }
         }
@@ -172,8 +182,7 @@ class GatherActivity : AppCompatActivity() {
             setPositiveButton("Übernehmen", DialogInterface.OnClickListener {dialog, id ->
                 // Projektbeschreibung ändern
                 aktuellesProjekt.beschreibung = editText.text.toString().trim()
-                findViewById<TextView>(R.id.textview_aktuelles_projekt).text = getString(R.string.aktuelles_projekt_prefix) + "${aktuellesProjekt.beschreibung} (" +
-                        dateFormat.format(Date(aktuellesProjekt.id)) + ")"
+                findViewById<TextView>(R.id.textview_aktuelles_projekt).text = getString(R.string.aktuelles_projekt_prefix) + aktuellesProjekt.getDescription()
                 // Projekt-Update in datenbank
                 GlobalScope.launch {
                     database.projekteDao().updateProjekt(aktuellesProjekt)
