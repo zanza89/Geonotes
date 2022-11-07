@@ -15,7 +15,7 @@
             android:background="?attr/colorPrimary"
             android:elevation="4dp"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
     <TextView
             android:layout_width="wrap_content"
@@ -33,25 +33,25 @@
             android:textOn="@string/lokalisierung_gestartet"
             android:textOff="@string/lokalisierung_starten"
             android:onClick="onToggleButtonLokalisierenClick"
-            android:id="@+id/togglebutton_lokalisierung"/>
-    
+            android:id="@+id/togglebutton_lokalisierung" />
+
     <View
             android:layout_width="match_parent"
             android:layout_height="1.5dp"
             android:background="#000"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp"/>
+            android:layout_marginBottom="4dp" />
 
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/aktuelles_projekt_prefix"
-            android:id="@+id/textview_aktuelles_projekt"/>
+            android:id="@+id/textview_aktuelles_projekt" />
 
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/thema"/>
+            android:text="@string/thema" />
 
     <EditText
             android:layout_width="match_parent"
@@ -61,24 +61,66 @@
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/notiz"/>
+            android:text="@string/notiz" />
 
     <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/edittext_notiz" />
-    
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/button_previous"
+                android:src="@android:drawable/ic_media_previous"
+                android:onClick="onButtonVorherigeNotizClick"
+                app:layout_constraintLeft_toLeftOf="parent" />
+
+        <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/button_next"
+                android:src="@android:drawable/ic_media_next"
+                android:onClick="onButtonNaechsteNotizClick"
+                app:layout_constraintRight_toRightOf="parent" />
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Vorherige Notiz"
+                app:layout_constraintLeft_toRightOf="@+id/button_previous"
+                app:layout_constraintTop_toTopOf="@+id/button_previous"
+                app:layout_constraintBottom_toBottomOf="@+id/button_previous" />
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nächste Notiz"
+                app:layout_constraintRight_toLeftOf="@+id/button_next"
+                app:layout_constraintTop_toTopOf="@+id/button_next"
+                app:layout_constraintBottom_toBottomOf="@+id/button_next" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/notiz_speichern"
-            android:onClick="onButtonNotizSpeichernClick"/>
+            android:onClick="onButtonNotizSpeichernClick" />
 
     <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/standort_anzeigen"
-            android:onClick="onButtonStandortAnzeigenClick"/>
+            android:onClick="onButtonStandortAnzeigenClick" />
+    <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="destroy"
+            android:onClick="onButtonDestroyClick"/>
 
     <TextView
             android:layout_width="wrap_content"

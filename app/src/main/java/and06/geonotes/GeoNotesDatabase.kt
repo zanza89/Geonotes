@@ -1,6 +1,7 @@
 package and06.geonotes
 
 import android.content.Context
+import android.os.Parcelable
 import androidx.room.*
 import java.text.DateFormat
 
@@ -49,11 +50,14 @@ interface ProjekteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertProjekt(projekt: Projekt): Long
 
-    @Query("SELECT * FROM Projekte")
+    @Query("SELECT * FROM projekte")
     fun getProjekte(): List<Projekt>
 
     @Update
     fun updateProjekt(projekt: Projekt)
+
+    @Query("SELECT * FROM projekte where id=:id")
+    fun getProjekt(id: Long) : Projekt
 }
 
 @Dao
@@ -72,6 +76,15 @@ interface NotizenDao {
 
     @Query("SELECT * from notizen")
     fun getNotizen(): List<Notiz>
+
+    @Query("SELECT * from notizen where projektId=:projektId")
+    fun getNotizen(projektId: Long): List<Notiz>
+
+    @Query("SELECT * from notizen where projektId = :projektId AND id < :notizId ORDER BY id ASC")
+    fun getPreviousNotizen(notizId: Long, projektId: Long): List<Notiz>
+
+    @Query("SELECT * from notizen where projektId = :projektId AND id > :notizId ORDER BY id ASC")
+    fun getNextNotizen(notizId: Long, projektId: Long): List<Notiz>
 }
 
 @Database(entities = [Projekt::class, Notiz::class, Location::class], version = 1)
