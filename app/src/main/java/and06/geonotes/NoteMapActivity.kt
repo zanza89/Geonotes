@@ -1,13 +1,15 @@
 package and06.geonotes
 
-import android.location.Location
 import android.os.Bundle
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import java.io.File
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 class NoteMapActivity : AppCompatActivity() {
@@ -21,27 +23,44 @@ class NoteMapActivity : AppCompatActivity() {
         val tileCache = File(osmConfig.osmdroidBasePath, "tile")
         osmConfig.osmdroidTileCache = tileCache
         val map = findViewById<MapView>(R.id.mapview)
-        map.setTileSource(TileSourceFactory.USGS_TOPO)
+        map.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
 
-        val extras = intent.extras
-        if (extras == null) return
-        val location = extras.getParcelable<Location>(GatherActivity.LOCATION)
-        if (location == null) return
+        val extras = intent.extras ?:return
+        val notizen = intent.getParcelableArrayListExtra<Notiz>(GatherActivity.NOTIZEN)
+        notizen?.forEach {
+            val marker = Marker(map)
+            marker.position = GeoPoint(it.latitude, it.longitude)
+            marker.title = it.thema
+            marker.subDescription = it.notiz
+            marker.snippet = decimalToSexagesimal(it.latitude, it.longitude)
+            // marker.icon = getDrawable(R.drawable.crosshair)
+            // marker.setAnchor(0.5f, 0.5f)
+            map.overlays.add(marker)
 
-        val marker = Marker(map)
-        marker.position = GeoPoint(location.latitude, location.longitude)
-        marker.title = extras.getString(GatherActivity.TITLE)
-        marker.subDescription = extras.getString(GatherActivity.SNIPPET)
-        marker.snippet = decimalToSexagesimal(location.latitude, location.longitude)
-        // marker.icon = getDrawable(R.drawable.crosshair)
-        marker.setAnchor(0.5f, 0.5f)
-        map.overlays.add(marker)
+        }
 
         val controller = map.controller
-        controller.setCenter(marker.position)
-        controller.setZoom(18.0)
+        var indexAktuelleNotiz = extras.getInt(GatherActivity.INDEX_AKTUELLE_NOTIZ)
+        val aktuelleNotiz = notizen?.get(indexAktuelleNotiz)
+        controller.setCenter(GeoPoint(aktuelleNotiz!!.latitude, aktuelleNotiz.longitude))
+        controller.setZoom(10.0)
 
         map.mapOrientation = 45.0f
+
+        val buttonPrevious = findViewById<ImageButton>(R.id.button_previous_notiz)
+        buttonPrevious.setOnClickListener {
+            indexAktuelleNotiz = if (indexAktuelleNotiz == 0) notizen.size - 1
+            else indexAktuelleNotiz - 1
+            val notiz = notizen.get(indexAktuelleNotiz)
+            controller.setCenter(GeoPoint(notiz.latitude, notiz.longitude))
+        }
+
+        val buttonNext = findViewById<ImageButton>(R.id.button_next_notiz)
+        buttonNext.setOnClickListener {
+            indexAktuelleNotiz = (indexAktuelleNotiz + 1) % notizen.size
+            val notiz = notizen.get(indexAktuelleNotiz)
+            controller.setCenter(GeoPoint(notiz.latitude, notiz.longitude))
+        }
     }
 
     override fun onResume() {
@@ -59,24 +78,21 @@ class NoteMapActivity : AppCompatActivity() {
     fun decimalToSexagesimal(latitude: Double, longitude: Double): String {
         val latDegrees = latitude.toInt()
         val lonDegrees = longitude.toInt()
-        val latTempMinutes = Math.abs((latitude - latDegrees) * 60)
-        val lonTempMinutes = Math.abs((longitude - lonDegrees) * 60)
+        val latTempMinutes = abs((latitude - latDegrees) * 60)
+        val lonTempMinutes = abs((longitude - lonDegrees) * 60)
 
         val latMinutes = latTempMinutes.toInt()
         val lonMinutes = lonTempMinutes.toInt()
-        val latTempSeconds = Math.abs((latTempMinutes - latMinutes) * 60)
-        val lonTempSeconds = Math.abs((lonTempMinutes - lonMinutes) * 60)
+        val latTempSeconds = abs((latTempMinutes - latMinutes) * 60)
+        val lonTempSeconds = abs((lonTempMinutes - lonMinutes) * 60)
         // auf drei Stellen runden
-        val latSeconds = Math.round(latTempSeconds * 1000) / 1000.0
-        val lonSeconds = Math.round(lonTempSeconds * 1000) / 1000.0
+        val latSeconds = (latTempSeconds * 1000).roundToInt() / 1000.0
+        val lonSeconds = (lonTempSeconds * 1000).roundToInt() / 1000.0
 
-        val latDegreesString = Math.abs(latDegrees).toString() + if (latitude < 0)
-            "°S " else "°N "
-        val lonDegreesString = Math.abs(lonDegrees).toString() + if (longitude < 0)
-            "°W " else "°O "
+        val latDegreesString = abs(latDegrees).toString() + if (latitude < 0) "°S " else "°N "
+        val lonDegreesString = abs(lonDegrees).toString() + if (longitude < 0) "°W " else "°O "
 
-        return lonDegreesString + lonMinutes + "\' " + lonSeconds + "\'\' / " +
-                latDegreesString + latMinutes + "\' " + latSeconds + "\'\'"
+        return "$lonDegreesString$lonMinutes\' $lonSeconds\'\' / $latDegreesString$latMinutes\' $latSeconds\'\'"
     }
 
 }

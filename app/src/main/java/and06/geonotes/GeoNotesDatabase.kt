@@ -1,8 +1,9 @@
 package and06.geonotes
 
 import android.content.Context
-import android.os.Parcelable
 import androidx.room.*
+import kotlinx.parcelize.Parcelize
+import android.os.Parcelable
 import java.text.DateFormat
 
 @Entity(tableName = "projekte")
@@ -21,10 +22,10 @@ data class Location(
     val altitude: Double,
     val provider: String
 )
-
+@Parcelize
 @Entity(
     tableName = "notizen",
-    indices = arrayOf(Index(value = ["projektId"]), Index(value = ["latitude", "longitude"])),
+    indices = [Index(value = ["projektId"]), Index(value = ["latitude", "longitude"])],
     foreignKeys = [ForeignKey(
         entity = Projekt::class,
         parentColumns = ["id"],
@@ -43,7 +44,7 @@ data class Notiz(
     val longitude: Double,
     var thema: String,
     var notiz: String
-)
+): Parcelable
 
 @Dao
 interface ProjekteDao {

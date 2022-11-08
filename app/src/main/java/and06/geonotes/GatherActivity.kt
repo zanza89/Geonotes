@@ -21,13 +21,13 @@ import androidx.appcompat.widget.Toolbar
 import kotlinx.coroutines.*
 import java.text.DateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 class GatherActivity : AppCompatActivity() {
 
     companion object {
-        val LOCATION = "location"
-        val TITLE = "titel"
-        val SNIPPET = "snippet"
+        val NOTIZEN = "notizen"
+        val INDEX_AKTUELLE_NOTIZ = "index_aktuelle_notiz"
         val PREFERENCES = "preferences"
         val ID_ZULETZT_GEOEFFNETES_PROJEKT = "zuletzt_geoeffnetes_projekt"
     }
@@ -79,7 +79,6 @@ class GatherActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
     override fun onPause() {
@@ -415,34 +414,23 @@ class GatherActivity : AppCompatActivity() {
     }
 
     fun onButtonStandortAnzeigenClick(view: View?) {
-        val spinner = findViewById<Spinner>(R.id.spinner_provider)
-        if (spinner.count == 0) {
-            Toast.makeText(
-                this, "Erforderliche Berechtigung wurden nicht erteilt", Toast.LENGTH_LONG
-            ).show()
+        if (aktuelleNotiz == null) {
+            Toast.makeText(this, "Bitte Notiz auswählen oder speichern", Toast.LENGTH_LONG).show()
             return
         }
-        val provider = spinner.selectedItem as String
-        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        try {
-            val lastLocation = locationManager.getLastKnownLocation(provider)
-            if (lastLocation == null) {
-                Toast.makeText(
-                    this,
-                    "noch keine Geoposition ermittelt. Ist die Standortermittlung aktiv?",
-                    Toast.LENGTH_LONG
-                ).show()
-                return
+        val database = GeoNotesDatabase.getInstance(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            var notizen : List<Notiz>? = null
+            withContext(Dispatchers.IO) {
+                notizen = database.notizenDao().getNotizen(aktuellesProjekt.id)
             }
-            val intent = Intent(this, NoteMapActivity::class.java)
-            intent.putExtra(LOCATION, lastLocation)
-            intent.putExtra(TITLE, findViewById<TextView>(R.id.edittext_thema).text.toString())
-            intent.putExtra(SNIPPET, findViewById<TextView>(R.id.edittext_notiz).text.toString())
-            startActivity(intent)
-        } catch (ex: SecurityException) {
-            Log.e(javaClass.simpleName, "Erforderliche Berechtigung ${ex.toString()} nicht erteilt")
+            if (!notizen.isNullOrEmpty()) {
+                val intent = Intent(this@GatherActivity, NoteMapActivity::class.java)
+                intent.putParcelableArrayListExtra(NOTIZEN, ArrayList<Notiz>(notizen!!))
+                intent.putExtra(INDEX_AKTUELLE_NOTIZ, notizen?.indexOf(aktuelleNotiz!!))
+                startActivity(intent)
+            }
         }
-
     }
 
     private fun showProperties(manager: LocationManager, providerName: String): String {
@@ -481,6 +469,7 @@ class GatherActivity : AppCompatActivity() {
             textView.append("\nEmpfangene Geodaten:\n$location")
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
 
         override fun onProviderEnabled(provider: String) {}
