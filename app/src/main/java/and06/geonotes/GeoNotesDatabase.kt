@@ -86,6 +86,9 @@ interface NotizenDao {
 
     @Query("SELECT * from notizen where projektId = :projektId AND id > :notizId ORDER BY id ASC")
     fun getNextNotizen(notizId: Long, projektId: Long): List<Notiz>
+
+    @Query("SELECT * from notizen where id = :id")
+    fun getNotiz(id: Long): Notiz
 }
 
 @Database(entities = [Projekt::class, Notiz::class, Location::class], version = 1)

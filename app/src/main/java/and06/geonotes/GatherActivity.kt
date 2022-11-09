@@ -115,6 +115,27 @@ class GatherActivity : AppCompatActivity() {
         ).apply()
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != RESULT_OK) return
+        if (requestCode != 0) return
+        val extras = data?.getExtras() ?: return
+        val notizId = extras.getLong(NoteMapActivity.AKTUELLE_NOTIZ_ID)
+        Log.d(javaClass.simpleName, "Notiz-ID: $notizId")
+        val database = GeoNotesDatabase.getInstance(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            var notiz : Notiz? = null
+            withContext(Dispatchers.IO) {
+                notiz = database.notizenDao().getNotiz(notizId)
+            }
+            if (notiz != null) {
+                aktuelleNotiz = notiz
+                findViewById<TextView>(R.id.edittext_thema).text = aktuelleNotiz?.thema
+                findViewById<TextView>(R.id.edittext_notiz).text = aktuelleNotiz?.notiz
+            }
+        }
+    }
+
     @SuppressLint("MissingSuperCall")
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
@@ -428,7 +449,7 @@ class GatherActivity : AppCompatActivity() {
                 val intent = Intent(this@GatherActivity, NoteMapActivity::class.java)
                 intent.putParcelableArrayListExtra(NOTIZEN, ArrayList<Notiz>(notizen!!))
                 intent.putExtra(INDEX_AKTUELLE_NOTIZ, notizen?.indexOf(aktuelleNotiz!!))
-                startActivity(intent)
+                startActivityForResult(intent, 0)
             }
         }
     }

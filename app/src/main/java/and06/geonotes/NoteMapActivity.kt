@@ -1,7 +1,9 @@
 package and06.geonotes
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageButton
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -13,6 +15,10 @@ import kotlin.math.roundToInt
 
 
 class NoteMapActivity : AppCompatActivity() {
+
+    companion object {
+        val AKTUELLE_NOTIZ_ID = "aktuelle_notiz_id"
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notemap)
@@ -61,6 +67,16 @@ class NoteMapActivity : AppCompatActivity() {
             val notiz = notizen.get(indexAktuelleNotiz)
             controller.setCenter(GeoPoint(notiz.latitude, notiz.longitude))
         }
+
+        // zurück Taste handler:
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val pushIntent = getIntent()
+                pushIntent.putExtra(AKTUELLE_NOTIZ_ID, notizen.get(indexAktuelleNotiz).id)
+                setResult(RESULT_OK, pushIntent)
+                finish()
+            }
+        })
     }
 
     override fun onResume() {
