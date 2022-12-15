@@ -10,6 +10,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -30,6 +31,8 @@ class GatherActivity : AppCompatActivity() {
         val INDEX_AKTUELLE_NOTIZ = "index_aktuelle_notiz"
         val PREFERENCES = "preferences"
         val ID_ZULETZT_GEOEFFNETES_PROJEKT = "zuletzt_geoeffnetes_projekt"
+        val AKTUELLE_NOTIZ = "aktuelle_notiz"
+        val AKTUELLES_PROJEKT = "aktuelle_projekt"
     }
 
     var minTime = 4000L // in Millisekunden
@@ -53,8 +56,16 @@ class GatherActivity : AppCompatActivity() {
         val textView = findViewById<TextView>(R.id.textview_aktuelles_projekt)
         textView.append(aktuellesProjekt.getDescription())
 
+        if (savedInstanceState != null) {
+            aktuellesProjekt = savedInstanceState.getParcelable(AKTUELLES_PROJEKT)!!
+            val notiz: Notiz? = savedInstanceState.getParcelable(AKTUELLE_NOTIZ)
+            if (notiz != null) aktuelleNotiz = notiz
+            return
+        }
+
         val projektId = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).getLong(
-            ID_ZULETZT_GEOEFFNETES_PROJEKT, 0)
+            ID_ZULETZT_GEOEFFNETES_PROJEKT, 0
+        )
         if (projektId != 0L) {
             val database = GeoNotesDatabase.getInstance(this)
             CoroutineScope(Dispatchers.Main).launch {
@@ -69,7 +80,8 @@ class GatherActivity : AppCompatActivity() {
                             // ausgewähltes Projekt übernehmen und anzeigen:
                             aktuellesProjekt = projekt!!
                             val textView = findViewById<TextView>(R.id.textview_aktuelles_projekt)
-                            textView.text = getString(R.string.aktuelles_projekt_prefix) + aktuellesProjekt.getDescription()
+                            textView.text =
+                                getString(R.string.aktuelles_projekt_prefix) + aktuellesProjekt.getDescription()
                         })
                         setNegativeButton("Nein", DialogInterface.OnClickListener { dialog, id ->
                             // ist nichts zu tun, aber setNegativeButton muss deklariert sein
@@ -110,9 +122,18 @@ class GatherActivity : AppCompatActivity() {
         super.onDestroy()
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         locationManager.removeUpdates(locationListener)
-        getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).edit().putLong(ID_ZULETZT_GEOEFFNETES_PROJEKT,
+        getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).edit().putLong(
+            ID_ZULETZT_GEOEFFNETES_PROJEKT,
             aktuellesProjekt.id
         ).apply()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putParcelable(AKTUELLES_PROJEKT, aktuellesProjekt)
+        if (aktuelleNotiz != null) {
+            outState.putParcelable(AKTUELLE_NOTIZ, aktuelleNotiz)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -124,7 +145,7 @@ class GatherActivity : AppCompatActivity() {
         Log.d(javaClass.simpleName, "Notiz-ID: $notizId")
         val database = GeoNotesDatabase.getInstance(this)
         CoroutineScope(Dispatchers.Main).launch {
-            var notiz : Notiz? = null
+            var notiz: Notiz? = null
             withContext(Dispatchers.IO) {
                 notiz = database.notizenDao().getNotiz(notizId)
             }
@@ -185,6 +206,15 @@ class GatherActivity : AppCompatActivity() {
             }
             R.id.menu_projekt_auswaehlen -> {
                 openProjektAuswaehlenDialog()
+            }
+            R.id.menu_notiz_loeschen -> {
+                notizLoeschen()
+            }
+            R.id.menu_projekt_versenden -> {
+                projektVersenden()
+            }
+            R.id.menu_osm_oeffnen -> {
+                openWebView()
             }
         }
         return super.onOptionsItemSelected(item)
@@ -267,23 +297,109 @@ class GatherActivity : AppCompatActivity() {
         }
     }
 
+    fun notizLoeschen() {
+        Log.d(javaClass.simpleName, "Button löschen wurde getätigt")
+        val textViewThema = findViewById<TextView>(R.id.edittext_thema)
+        val textViewNotiz = findViewById<TextView>(R.id.edittext_notiz)
+        if (aktuelleNotiz == null) {
+            return
+        }
+        val database = GeoNotesDatabase.getInstance(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            var notizen: List<Notiz>? = null
+            withContext(Dispatchers.IO) {
+                notizen = database.notizenDao().getNotizen(aktuellesProjekt.id)
+                if (notizen!!.size > 1) {
+                    database.notizenDao().deleteNotiz(aktuelleNotiz?.id!!)
+                    aktuelleNotiz = null
+                    textViewThema.text = ""
+                    textViewNotiz.text = ""
+                } else {
+                    Log.d(javaClass.simpleName, "weniger als eine Notiz")
+                    CoroutineScope(Dispatchers.Main).launch {
+                        with(AlertDialog.Builder(this@GatherActivity)) {
+                            setMessage("Löschen der letzten Notiz löscht das Projekt. Fortfahren?")
+                            setPositiveButton("OK", DialogInterface.OnClickListener { dialog, id ->
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    withContext(Dispatchers.IO) {
+                                        database.notizenDao().deleteNotiz(aktuelleNotiz?.id!!)
+                                        database.projekteDao().deleteProjekt(aktuellesProjekt.id)
+                                        aktuellesProjekt = Projekt(Date().getTime(), "")
+                                        aktuelleNotiz = null
+                                    }
+                                    val textView =
+                                        findViewById<TextView>(R.id.textview_aktuelles_projekt)
+                                    textViewThema.text = ""
+                                    textViewNotiz.text = ""
+                                    textView.text =
+                                        getString(R.string.aktuelles_projekt_prefix) + aktuellesProjekt.getDescription()
+                                }
+                            })
+                            setNegativeButton(
+                                "Abbrechen",
+                                DialogInterface.OnClickListener { dialog, id ->
+                                    return@OnClickListener
+                                })
+                            show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun projektVersenden() {
+        // Verfügbarkeit von External Storage überprüfen (ob es gemounted ist)
+        if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            Toast.makeText(this, "External Storage nicht verfügbar", Toast.LENGTH_LONG).show()
+            return
+        }
+        val database = GeoNotesDatabase.getInstance(this)
+        GlobalScope.launch {
+            val notizen = database.notizenDao().getNotizen(aktuellesProjekt.id)
+            if (notizen.isNullOrEmpty()) {
+                Toast.makeText(this@GatherActivity, "keine Notizen vorhanden", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val generator = GpxGenerator()
+            val uri = generator.createGpxFile(this@GatherActivity, notizen, aktuellesProjekt.getDescription())
+            with(Intent(Intent.ACTION_SEND)) {
+                type = "text/xml"
+                putExtra(Intent.EXTRA_EMAIL, arrayOf("xxx@test.com"))
+                putExtra(Intent.EXTRA_SUBJECT, aktuellesProjekt.getDescription())
+                putExtra(Intent.EXTRA_STREAM, uri)
+                startActivity(Intent.createChooser(this, "Mail versenden"))
+            }
+        }
+    }
+
     fun onButtonVorherigeNotizClick(view: View?) {
         val textViewThema = findViewById<TextView>(R.id.edittext_thema)
         val textViewNotiz = findViewById<TextView>(R.id.edittext_notiz)
         if (aktuelleNotiz == null) {
             if (textViewThema.text.isNotEmpty() || textViewNotiz.text.isNotEmpty()) {
-                Toast.makeText(this, "Notiz wurde noch nicht gespeichert", Toast.LENGTH_LONG).show() //Fall 1
+                Toast.makeText(this, "Notiz wurde noch nicht gespeichert", Toast.LENGTH_LONG)
+                    .show() //Fall 1
                 return
             }
         }
         val database = GeoNotesDatabase.getInstance(this)
         CoroutineScope(Dispatchers.Main).launch {
-            var notizen : List<Notiz>? = null
+            var notizen: List<Notiz>? = null
             withContext(Dispatchers.IO) {
                 if (aktuelleNotiz == null) { //Fall 2
                     notizen = database.notizenDao().getNotizen(aktuellesProjekt.id)
                 } else { // Fall 3
-                    notizen = database.notizenDao().getPreviousNotizen(aktuelleNotiz?.id!!, aktuellesProjekt.id)
+                    if (!aktuelleNotiz?.thema.toString()
+                            .contentEquals(textViewThema.text) || !aktuelleNotiz?.notiz.toString()
+                            .contentEquals(textViewNotiz.text)
+                    ) {
+                        aktuelleNotiz?.thema = textViewThema.text.toString()
+                        aktuelleNotiz?.notiz = textViewNotiz.text.toString()
+                        database.notizenDao().insertNotiz(aktuelleNotiz!!)
+                    }
+                    notizen = database.notizenDao()
+                        .getPreviousNotizen(aktuelleNotiz?.id!!, aktuellesProjekt.id)
                 }
             }
             if (!notizen.isNullOrEmpty()) {
@@ -303,7 +419,8 @@ class GatherActivity : AppCompatActivity() {
         val textViewNotiz = findViewById<TextView>(R.id.edittext_notiz)
         if (aktuelleNotiz == null) {
             if (textViewThema.text.isNotEmpty() || textViewNotiz.text.isNotEmpty()) {
-                Toast.makeText(this, "Notiz wurde noch nicht gespeichert", Toast.LENGTH_LONG).show() //Fall 1
+                Toast.makeText(this, "Notiz wurde noch nicht gespeichert", Toast.LENGTH_LONG)
+                    .show() //Fall 1
             }
             return //Fall 1 und Fall 2
         }
@@ -441,7 +558,7 @@ class GatherActivity : AppCompatActivity() {
         }
         val database = GeoNotesDatabase.getInstance(this)
         CoroutineScope(Dispatchers.Main).launch {
-            var notizen : List<Notiz>? = null
+            var notizen: List<Notiz>? = null
             withContext(Dispatchers.IO) {
                 notizen = database.notizenDao().getNotizen(aktuellesProjekt.id)
             }
@@ -483,6 +600,26 @@ class GatherActivity : AppCompatActivity() {
         }
     }
 
+    fun openWebView() {
+        if (aktuelleNotiz == null) {
+            Toast.makeText(this, "Bitte Notiz auswählen oder speichern", Toast.LENGTH_LONG).show()
+            return
+        }
+        val database = GeoNotesDatabase.getInstance(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            var notizen: List<Notiz>? = null
+            withContext(Dispatchers.IO) {
+                notizen = database.notizenDao().getNotizen(aktuellesProjekt.id)
+            }
+            notizen?.also {
+                val intent = Intent(this@GatherActivity, OsmWebViewActivity::class.java)
+                intent.putParcelableArrayListExtra(NOTIZEN, ArrayList<Notiz>(it))
+                intent.putExtra(INDEX_AKTUELLE_NOTIZ, it.indexOf(aktuelleNotiz!!))
+                startActivity(intent)
+            }
+        }
+    }
+
     inner class NoteLocationListener : LocationListener {
         override fun onLocationChanged(location: Location) {
             Log.d(javaClass.simpleName, "Empfangene Geodaten:\n$location")
@@ -491,7 +628,8 @@ class GatherActivity : AppCompatActivity() {
         }
 
         @Deprecated("Deprecated in Java")
-        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+        }
 
         override fun onProviderEnabled(provider: String) {}
 

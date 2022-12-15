@@ -12,6 +12,23 @@
             android:icon="@android:drawable/ic_menu_set_as"
             app:showAsAction="ifRoom" />
 
+    <item
+            android:id="@+id/menu_notiz_loeschen"
+            android:title="@string/action_notiz_loeschen"
+            android:icon="@android:drawable/ic_menu_delete"
+            app:showAsAction="ifRoom" />
+
+    <item
+            android:id="@+id/menu_projekt_versenden"
+            android:title="@string/action_projekt_versenden"
+            android:icon="@android:drawable/ic_menu_send"
+            app:showAsAction="ifRoom"/>
+
+    <item android:id="@+id/menu_osm_oeffnen"
+            android:title="@string/in_webview_anzeigen"
+            android:icon="@android:drawable/ic_menu_directions"
+            app:showAsAction="ifRoom"/>
+
     <group android:checkableBehavior="single">
         <item
                 android:title="@string/title_item_foot"

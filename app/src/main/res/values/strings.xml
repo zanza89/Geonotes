@@ -11,6 +11,9 @@
     <string name="notiz_speichern">Notiz Speichern</string>
     <string name="action_projekt_bearbeiten">Projekt bearbeiten</string>
     <string name="action_projekt_auswaehlen">Projekt auswählen</string>
+    <string name="action_notiz_loeschen">Notiz löschen</string>
+    <string name="action_projekt_versenden">Projekt versenden</string>
+    <string name="in_webview_anzeigen">In Webview anzeigen</string>
     <string name="title_item_foot">Zu Fuß (9 sec/10 m)</string>
     <string name="title_item_bicycle">Rad (4 sec/25 m)</string>
     <string name="title_item_car">PKW (4 sec/50 m)</string>
